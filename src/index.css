@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-sans: 'Noto Sans TC', 'Outfit', system-ui, -apple-system, sans-serif;
+    --font-display: 'Outfit', 'Noto Sans TC', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  html,
+  body {
+    font-family: var(--font-sans);
+    background-color: #f6f2ea;
+    color: #17211e;
+    overflow-x: hidden;
+  }
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-mono-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Subtle Hong Kong retro tile grid background */
+.hk-counter-bg {
+  background-color: #f6f2ea;
+  background-image:
+    radial-gradient(circle at 20% 15%, rgba(15, 118, 110, 0.06) 0%, transparent 45%),
+    radial-gradient(circle at 85% 80%, rgba(217, 119, 6, 0.07) 0%, transparent 45%),
+    linear-gradient(to right, rgba(23, 33, 30, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(23, 33, 30, 0.03) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 36px 36px, 36px 36px;
+}
+
+/* Emerald shop checkout felt mat */
+.hk-felt-mat {
+  background-color: #0e4d3a;
+  background-image:
+    radial-gradient(circle at 50% 0%, rgba(52, 211, 153, 0.14) 0%, transparent 65%),
+    repeating-linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.018) 0px,
+      rgba(255, 255, 255, 0.018) 2px,
+      transparent 2px,
+      transparent 8px
+    );
+}
+
+@keyframes gentle-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+.animate-gentle-shake {
+  animation: gentle-shake 0.34s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes stamp-pop {
+  0% { transform: scale(2.1) rotate(-18deg); opacity: 0; }
+  65% { transform: scale(0.92) rotate(-10deg); opacity: 1; }
+  100% { transform: scale(1) rotate(-12deg); opacity: 1; }
+}
+
+.animate-stamp-pop {
+  animation: stamp-pop 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-gentle-shake,
+  .animate-stamp-pop {
+    animation: none !important;
+  }
+}

@@ -1,0 +1,163 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 0: Default-deny catch-all safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global hardened primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidAvatar(avatarId) {
+      return avatarId is string && avatarId.size() >= 1 && avatarId.size() <= 16
+        && avatarId in ['cat', 'panda', 'fox', 'bear', 'rabbit', 'owl', 'shiba', 'duck'];
+    }
+
+    function isValidStage(stage) {
+      return stage is string && stage.size() >= 1 && stage.size() <= 16
+        && stage in ['recognize', 'exchange', 'checkout'];
+    }
+
+    // Validation Blueprint: StudentProfile (aligned with firebase-blueprint.json)
+    function isValidStudent(data) {
+      return data.keys().hasAll([
+          'ownerId', 'name', 'className', 'avatarId',
+          'totalStars', 'totalScore', 'gamesPlayed',
+          'bestStage1', 'bestStage2', 'bestStage3',
+          'starsStage1', 'starsStage2', 'starsStage3',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId', 'name', 'className', 'avatarId',
+          'totalStars', 'totalScore', 'gamesPlayed',
+          'bestStage1', 'bestStage2', 'bestStage3',
+          'starsStage1', 'starsStage2', 'starsStage3',
+          'createdAt', 'updatedAt'
+        ])
+        && data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128
+        && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.ownerId == request.auth.uid
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 30
+        && data.className is string && data.className.size() <= 20
+        && isValidAvatar(data.avatarId)
+        && data.totalStars is int && data.totalStars >= 0 && data.totalStars <= 1000000
+        && data.totalScore is int && data.totalScore >= 0 && data.totalScore <= 10000000
+        && data.gamesPlayed is int && data.gamesPlayed >= 0 && data.gamesPlayed <= 100000
+        && data.bestStage1 is int && data.bestStage1 >= 0 && data.bestStage1 <= 10000
+        && data.bestStage2 is int && data.bestStage2 >= 0 && data.bestStage2 <= 10000
+        && data.bestStage3 is int && data.bestStage3 >= 0 && data.bestStage3 <= 10000
+        && data.starsStage1 is int && data.starsStage1 >= 0 && data.starsStage1 <= 3
+        && data.starsStage2 is int && data.starsStage2 >= 0 && data.starsStage2 <= 3
+        && data.starsStage3 is int && data.starsStage3 >= 0 && data.starsStage3 <= 3
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: GameSession (aligned with firebase-blueprint.json)
+    function isValidGameSession(data) {
+      return data.keys().hasAll([
+          'ownerId', 'studentId', 'studentName', 'stage',
+          'score', 'stars', 'correctCount', 'totalQuestions',
+          'accuracy', 'durationSeconds', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId', 'studentId', 'studentName', 'stage',
+          'score', 'stars', 'correctCount', 'totalQuestions',
+          'accuracy', 'durationSeconds', 'createdAt'
+        ])
+        && data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128
+        && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.ownerId == request.auth.uid
+        && isValidId(data.studentId)
+        && data.studentName is string && data.studentName.size() >= 1 && data.studentName.size() <= 30
+        && isValidStage(data.stage)
+        && data.score is int && data.score >= 0 && data.score <= 10000
+        && data.stars is int && data.stars >= 1 && data.stars <= 3
+        && data.correctCount is int && data.correctCount >= 0 && data.correctCount <= 50
+        && data.totalQuestions is int && data.totalQuestions >= 1 && data.totalQuestions <= 50
+        && data.correctCount <= data.totalQuestions
+        && data.accuracy is int && data.accuracy >= 0 && data.accuracy <= 100
+        && data.durationSeconds is int && data.durationSeconds >= 0 && data.durationSeconds <= 7200
+        && data.createdAt is timestamp;
+    }
+
+    // Collection: /students/{studentId}
+    match /students/{studentId} {
+      allow get: if isVerified() && isValidId(studentId) && existing().ownerId == request.auth.uid;
+
+      allow list: if isVerified() && resource.data.ownerId == request.auth.uid;
+
+      allow create: if isVerified()
+        && isValidId(studentId)
+        && isValidStudent(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isVerified()
+        && isValidId(studentId)
+        && isValidStudent(incoming())
+        && existing().ownerId == request.auth.uid
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Action 1: Update student profile info
+          incoming().diff(existing()).affectedKeys().hasOnly(['name', 'className', 'avatarId', 'updatedAt'])
+          ||
+          // Action 2: Record completed game progress
+          (
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'totalStars', 'totalScore', 'gamesPlayed',
+              'bestStage1', 'bestStage2', 'bestStage3',
+              'starsStage1', 'starsStage2', 'starsStage3',
+              'updatedAt'
+            ])
+            && incoming().gamesPlayed >= existing().gamesPlayed
+            && incoming().totalStars >= existing().totalStars
+            && incoming().totalScore >= existing().totalScore
+          )
+        );
+
+      allow delete: if isVerified() && isValidId(studentId) && existing().ownerId == request.auth.uid;
+    }
+
+    // Collection: /gameSessions/{sessionId}
+    match /gameSessions/{sessionId} {
+      allow get: if isVerified() && isValidId(sessionId) && existing().ownerId == request.auth.uid;
+
+      allow list: if isVerified() && resource.data.ownerId == request.auth.uid;
+
+      allow create: if isVerified()
+        && isValidId(sessionId)
+        && isValidGameSession(incoming())
+        && incoming().createdAt == request.time
+        && exists(/databases/$(database)/documents/students/$(incoming().studentId))
+        && get(/databases/$(database)/documents/students/$(incoming().studentId)).data.ownerId == request.auth.uid;
+
+      // Immutable learning logs — updates strictly forbidden
+      allow update: if false;
+
+      allow delete: if isVerified() && isValidId(sessionId) && existing().ownerId == request.auth.uid;
+    }
+  }
+}

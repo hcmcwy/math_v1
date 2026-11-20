@@ -1,0 +1,184 @@
+{
+  "entities": {
+    "StudentProfile": {
+      "title": "StudentProfile",
+      "description": "A student learner profile managed under an authenticated parent, teacher, or student account for Smart Little Shopper 1.0.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Firebase Auth UID of the managing account."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 30,
+          "description": "Student display name."
+        },
+        "className": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 20,
+          "description": "Optional class or group label (e.g., 小一甲)."
+        },
+        "avatarId": {
+          "type": "string",
+          "enum": ["cat", "panda", "fox", "bear", "rabbit", "owl", "shiba", "duck"],
+          "maxLength": 16,
+          "description": "Avatar badge identifier."
+        },
+        "totalStars": {
+          "type": "integer",
+          "description": "Cumulative stars earned across all stages."
+        },
+        "totalScore": {
+          "type": "integer",
+          "description": "Cumulative points earned across all games."
+        },
+        "gamesPlayed": {
+          "type": "integer",
+          "description": "Total completed game rounds."
+        },
+        "bestStage1": {
+          "type": "integer",
+          "description": "Best score in Stage 1 (Recognize Denominations)."
+        },
+        "bestStage2": {
+          "type": "integer",
+          "description": "Best score in Stage 2 (Equivalent Exchange)."
+        },
+        "bestStage3": {
+          "type": "integer",
+          "description": "Best score in Stage 3 (Exact Checkout)."
+        },
+        "starsStage1": {
+          "type": "integer",
+          "description": "Best star rating (0-3) in Stage 1."
+        },
+        "starsStage2": {
+          "type": "integer",
+          "description": "Best star rating (0-3) in Stage 2."
+        },
+        "starsStage3": {
+          "type": "integer",
+          "description": "Best star rating (0-3) in Stage 3."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the student profile was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of the latest profile or progress update."
+        }
+      },
+      "required": [
+        "ownerId",
+        "name",
+        "className",
+        "avatarId",
+        "totalStars",
+        "totalScore",
+        "gamesPlayed",
+        "bestStage1",
+        "bestStage2",
+        "bestStage3",
+        "starsStage1",
+        "starsStage2",
+        "starsStage3",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "GameSession": {
+      "title": "GameSession",
+      "description": "An immutable completed game round record linked to a student profile.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Firebase Auth UID of the managing account."
+        },
+        "studentId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Document ID of the associated student profile."
+        },
+        "studentName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 30,
+          "description": "Snapshot of the student name at completion."
+        },
+        "stage": {
+          "type": "string",
+          "enum": ["recognize", "exchange", "checkout"],
+          "maxLength": 16,
+          "description": "Stage identifier."
+        },
+        "score": {
+          "type": "integer",
+          "description": "Total score achieved in this round."
+        },
+        "stars": {
+          "type": "integer",
+          "description": "Star rating earned (1 to 3)."
+        },
+        "correctCount": {
+          "type": "integer",
+          "description": "Number of questions answered correctly on first try."
+        },
+        "totalQuestions": {
+          "type": "integer",
+          "description": "Total questions in the round."
+        },
+        "accuracy": {
+          "type": "integer",
+          "description": "Percentage accuracy (0 to 100)."
+        },
+        "durationSeconds": {
+          "type": "integer",
+          "description": "Round duration in seconds."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the session completed."
+        }
+      },
+      "required": [
+        "ownerId",
+        "studentId",
+        "studentName",
+        "stage",
+        "score",
+        "stars",
+        "correctCount",
+        "totalQuestions",
+        "accuracy",
+        "durationSeconds",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/students/{studentId}": {
+      "schema": { "$ref": "#/entities/StudentProfile" },
+      "description": "Multi-user student profiles owned by an authenticated parent/teacher/student account."
+    },
+    "/gameSessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/GameSession" },
+      "description": "Immutable learning session logs referencing a valid owned StudentProfile."
+    }
+  }
+}

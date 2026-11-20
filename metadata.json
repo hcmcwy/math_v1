@@ -1,0 +1,6 @@
+{
+  "name": "精明小買家 1.0",
+  "description": "香港貨幣學習遊戲，模擬真實港幣硬幣與紙幣圖案，設「認識幣值」、「等值置換」與「剛好付清」三大關卡，支援多用戶學生管理及雲端儲存。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
